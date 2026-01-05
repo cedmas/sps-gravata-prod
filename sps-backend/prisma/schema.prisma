@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Unit {
+  id       String    @id @default(uuid())
+  name     String
+  acronym  String
+  programs Program[]
+
+  @@map("units")
+}
+
+model Axis {
+  id       String    @id @default(uuid())
+  name     String
+  color    String
+  programs Program[]
+
+  @@map("axes")
+}
+
+model Program {
+  id             String      @id @default(uuid())
+  name           String
+  objective      String
+  publicProblem  String
+  targetAudience String
+  unitId         String
+  axisId         String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  
+  unit           Unit        @relation(fields: [unitId], references: [id])
+  axis           Axis        @relation(fields: [axisId], references: [id])
+  
+  actions        Action[]
+  indicators     Indicator[]
+  risks          Risk[]
+
+  @@map("programs")
+}
+
+model Action {
+  id            String        @id @default(uuid())
+  programId     String
+  name          String
+  responsible   String
+  responsibleId String?
+  startDate     DateTime
+  endDate       DateTime
+  status        String
+  weight        Float         @default(1)
+  description   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  program       Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  deliverables  Deliverable[]
+  evidences     Evidence[]
+
+  @@map("actions")
+}
+
+model Indicator {
+  id          String   @id @default(uuid())
+  programId   String
+  name        String
+  description String
+  baseline    Float
+  target      Float
+  unit        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@map("indicators")
+}
+
+model Risk {
+  id          String   @id @default(uuid())
+  programId   String
+  description String
+  impact      Int
+  probability Int
+  severity    Int
+  mitigation  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@map("risks")
+}
+
+model Deliverable {
+  id          String   @id @default(uuid())
+  actionId    String
+  description String
+  date        DateTime
+  quantity    Float
+  unit        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  action      Action   @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  @@map("deliverables")
+}
+
+model Evidence {
+  id        String   @id @default(uuid())
+  actionId  String
+  url       String
+  type      String
+  createdAt DateTime @default(now())
+
+  action    Action   @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  @@map("evidences")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  uid         String   @unique
+  email       String   @unique
+  displayName String
+  role        String
+  unitId      String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Settings {
+  id           String   @id @default("global") 
+  geminiApiKey String?
+  updatedAt    DateTime @updatedAt
+
+  @@map("settings")
+}
