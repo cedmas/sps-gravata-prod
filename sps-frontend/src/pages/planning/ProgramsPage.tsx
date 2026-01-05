@@ -205,10 +205,10 @@ export default function ProgramsPage() {
                         <p className="text-sm font-medium text-blue-900">
                             Programas Cadastrados: <span className="font-bold">{filteredPrograms.length} / 5</span>
                         </p>
-                        <div className="w-32 h-2 bg-blue-200 rounded-full mt-1">
+                        <div className="w-32 h-2 bg-blue-200 rounded-full mt-1 overflow-hidden">
                             <div
                                 className="h-full bg-blue-600 rounded-full transition-all"
-                                style={{ width: `${(filteredPrograms.length / 5) * 100}%` }}
+                                style={{ width: `${Math.min((filteredPrograms.length / 5) * 100, 100)}%` }}
                             />
                         </div>
                     </div>
