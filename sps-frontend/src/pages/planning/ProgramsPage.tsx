@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FolderOpen, Target, AlertTriangle, Edit, Sparkles, Loader2, Bot } from 'lucide-react';
+import { Plus, Target, AlertTriangle, Sparkles, Loader2, Bot, FolderOpen } from 'lucide-react';
 import { aiService, AuditResult } from '../../services/aiService';
 import { firestoreDb } from '../../services/firestoreDb';
 import { Program, Unit, Axis } from '../../types';
@@ -7,9 +7,7 @@ import { validator, ValidationResult } from '../../services/validator';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { toast } from 'sonner';
-import ActionsList from './ActionsList';
-import IndicatorsList from './IndicatorsList';
-import RisksList from './RisksList';
+import ProgramCard from './ProgramCard';
 
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -242,70 +240,18 @@ export default function ProgramsPage() {
                         const validation = validationResults[prog.id];
 
                         return (
-                            <div key={prog.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:border-blue-200 transition-colors">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-gray-100 text-gray-600`}>
-                                                {axis?.name || 'Eixo não definido'}
-                                            </span>
-                                            {validation && (
-                                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${validation.isValid ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                                                    {validation.isValid ? '✅ Pronto' : '⚠️ Pendente'}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-lg font-bold text-gray-900">{prog.name}</h3>
-                                            <button
-                                                onClick={() => {
-                                                    setEditingId(prog.id);
-                                                    setNewProgram(prog);
-                                                    setAuditResult(null);
-                                                    setIsModalOpen(true);
-                                                }}
-                                                className="text-gray-400 hover:text-blue-600 p-1"
-                                                title="Editar Programa"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-                                        </div>
-
-                                        {/* Validation Errors */}
-                                        {validation && !validation.isValid && (
-                                            <div className="mt-2 mb-2 bg-amber-50 p-2 rounded border border-amber-100 text-xs text-amber-800">
-                                                <p className="font-bold mb-1">Pendências:</p>
-                                                <ul className="list-disc pl-4 space-y-0.5">
-                                                    {validation.errors.map((err, idx) => (
-                                                        <li key={idx}>{err}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-
-                                        <p className="text-gray-600 mt-1 text-sm line-clamp-2">{prog.objective}</p>
-                                    </div>
-                                </div>
-                                <div className="mt-4 pt-4 border-t border-gray-50 grid grid-cols-2 gap-4 text-xs text-gray-500">
-                                    <div>
-                                        <span className="font-semibold block text-gray-700">Problema Público</span>
-                                        {prog.publicProblem}
-                                    </div>
-                                    <div>
-                                        <span className="font-semibold block text-gray-700">Público-Alvo</span>
-                                        {prog.targetAudience}
-                                    </div>
-                                </div>
-
-                                {/* Actions Section moved inside the card */}
-                                <ActionsList programId={prog.id} />
-
-                                {/* Indicators Section */}
-                                <IndicatorsList programId={prog.id} />
-
-                                {/* Risks Section */}
-                                <RisksList programId={prog.id} />
-                            </div>
+                            <ProgramCard
+                                key={prog.id}
+                                program={prog}
+                                axis={axis}
+                                validation={validation}
+                                onEdit={() => {
+                                    setEditingId(prog.id);
+                                    setNewProgram(prog);
+                                    setAuditResult(null);
+                                    setIsModalOpen(true);
+                                }}
+                            />
                         )
                     })
                 )}

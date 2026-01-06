@@ -10,6 +10,8 @@ import InlineEvidenceUpload from '../../components/planning/InlineEvidenceUpload
 
 interface ActionsListProps {
     programId: string;
+    projectId?: string;
+    orphanedOnly?: boolean;
 }
 
 const statusColors: Record<ActionStatus, string> = {
@@ -19,7 +21,7 @@ const statusColors: Record<ActionStatus, string> = {
     'completed': 'bg-green-100 text-green-800'
 };
 
-export default function ActionsList({ programId }: ActionsListProps) {
+export default function ActionsList({ programId, projectId, orphanedOnly }: ActionsListProps) {
     const { userProfile } = useAuth();
     const [actions, setActions] = useState<Action[]>([]);
     const [loading, setLoading] = useState(true);
@@ -40,19 +42,26 @@ export default function ActionsList({ programId }: ActionsListProps) {
     useEffect(() => {
         loadActions();
         loadUsers();
-    }, [programId]);
+    }, [programId, projectId]);
 
     const loadActions = async () => {
         setLoading(true);
-        const data = await firestoreDb.getActions(programId);
+        let data: Action[] = [];
+
+        if (projectId) {
+            data = await firestoreDb.getProjectActions(projectId);
+        } else {
+            data = await firestoreDb.getActions(programId);
+            if (orphanedOnly) {
+                data = data.filter(a => !a.projectId);
+            }
+        }
         setActions(data);
         setLoading(false);
     };
 
     const loadUsers = async () => {
         const u = await firestoreDb.getAllUsers();
-        // Optional: Filter users by unit if we had easy access to current program's unit, 
-        // but for now showing all active users is safer.
         setUsers(u.filter(user => user.active !== false));
     };
 
@@ -63,6 +72,9 @@ export default function ActionsList({ programId }: ActionsListProps) {
         const actionData = {
             ...newAction,
             programId,
+            projectId, // Link to project if exists
+            startDate: newAction.startDate ? new Date(newAction.startDate).toISOString() : new Date().toISOString(),
+            endDate: newAction.endDate ? new Date(newAction.endDate).toISOString() : new Date().toISOString(),
             status: newAction.status as ActionStatus || 'not_started',
             weight: Number(newAction.weight) || 1
         };
@@ -112,7 +124,7 @@ export default function ActionsList({ programId }: ActionsListProps) {
             <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                     <Activity size={16} />
-                    Projetos e Ações ({actions.length})
+                    Ações ({actions.length})
                 </h4>
                 <button
                     onClick={() => {

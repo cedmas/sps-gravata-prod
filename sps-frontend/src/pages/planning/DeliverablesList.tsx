@@ -37,7 +37,8 @@ export default function DeliverablesList({ actionId, readOnly = false }: Deliver
         await firestoreDb.createDeliverable({
             ...newItem,
             actionId,
-            quantity: Number(newItem.quantity)
+            quantity: Number(newItem.quantity),
+            date: newItem.date ? new Date(newItem.date).toISOString() : new Date().toISOString()
         } as any);
 
         setIsAdding(false);

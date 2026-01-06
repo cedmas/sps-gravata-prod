@@ -1,4 +1,4 @@
-import { Unit, Program, Action, Indicator, Deliverable, Risk, Axis, UserProfile } from '../types';
+import { Unit, Program, Project, Action, Indicator, Deliverable, Risk, Axis, UserProfile } from '../types';
 
 export interface IDataService {
     // Axes
@@ -15,8 +15,15 @@ export interface IDataService {
     createProgram(program: Omit<Program, 'id'>): Promise<Program>;
     updateProgram(id: string, updates: Partial<Program>, userName?: string): Promise<void>;
 
+    // Projects
+    getProjects(programId: string): Promise<Project[]>;
+    createProject(project: Omit<Project, 'id'>): Promise<Project>;
+    updateProject(id: string, updates: Partial<Project>): Promise<void>;
+    deleteProject(id: string): Promise<void>;
+
     // Actions
     getActions(programId: string): Promise<Action[]>;
+    getProjectActions(projectId: string): Promise<Action[]>;
     getAllActions(): Promise<Action[]>;
     createAction(action: Omit<Action, 'id'>, userName?: string): Promise<Action>;
     updateAction(id: string, updates: Partial<Action>, userName?: string): Promise<void>;

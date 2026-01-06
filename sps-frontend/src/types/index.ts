@@ -33,9 +33,20 @@ export interface Program {
 
 export type ActionStatus = 'not_started' | 'in_progress' | 'completed' | 'delayed';
 
+export interface Project {
+    id: string;
+    programId: string;
+    name: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    status: ActionStatus;
+}
+
 export interface Action {
     id: string;
     programId: string;
+    projectId?: string;
     name: string;
     responsible: string;
     responsibleId?: string; // UID do usuário responsável

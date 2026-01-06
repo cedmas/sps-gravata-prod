@@ -13,12 +13,13 @@ import {
     limit
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Unit, Program, Action, Indicator, Deliverable, Risk, Axis, UserProfile } from '../../types';
+import { Unit, Program, Project, Action, Indicator, Deliverable, Risk, Axis, UserProfile } from '../../types';
 import { IDataService } from '../IDataService';
 
 const COLLECTIONS = {
     UNITS: 'units',
     PROGRAMS: 'programs',
+    PROJECTS: 'projects',
     ACTIONS: 'actions',
     INDICATORS: 'indicators',
     DELIVERABLES: 'deliverables',
@@ -109,11 +110,51 @@ export const firebaseAdapter: IDataService = {
         await logActivity(`Programa atualizado: ${oldData?.name || id}`, userName, diff, 'Program', id, 'UPDATE');
     },
 
+    // --- Projects ---
+    async getProjects(programId: string): Promise<Project[]> {
+        const q = query(
+            collection(db, COLLECTIONS.PROJECTS),
+            where("programId", "==", programId)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+    },
+
+    async createProject(project: Omit<Project, 'id'>): Promise<Project> {
+        const docRef = await addDoc(collection(db, COLLECTIONS.PROJECTS), project);
+        await logActivity(`Novo Projeto criado: ${project.name}`, 'Sistema', project, 'Project', docRef.id, 'CREATE');
+        return { id: docRef.id, ...project };
+    },
+
+    async updateProject(id: string, updates: Partial<Project>): Promise<void> {
+        const docRef = doc(db, COLLECTIONS.PROJECTS, id);
+        const oldDoc = await getDoc(docRef);
+        const oldData = oldDoc.data() as Project;
+
+        await updateDoc(docRef, updates);
+
+        const diff = calculateDiff(oldData, updates);
+        await logActivity(`Projeto atualizado: ${oldData?.name || id}`, 'Sistema', diff, 'Project', id, 'UPDATE');
+    },
+
+    async deleteProject(id: string): Promise<void> {
+        await deleteDoc(doc(db, COLLECTIONS.PROJECTS, id));
+    },
+
     // --- Actions ---
     async getActions(programId: string): Promise<Action[]> {
         const q = query(
             collection(db, COLLECTIONS.ACTIONS),
             where("programId", "==", programId)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Action));
+    },
+
+    async getProjectActions(projectId: string): Promise<Action[]> {
+        const q = query(
+            collection(db, COLLECTIONS.ACTIONS),
+            where("projectId", "==", projectId)
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Action));

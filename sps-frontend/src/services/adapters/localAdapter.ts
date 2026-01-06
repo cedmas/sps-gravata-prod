@@ -1,4 +1,4 @@
-import { Action, Axis, Deliverable, Indicator, Program, Risk, Unit, UserProfile } from "../../types";
+import { Action, Axis, Deliverable, Indicator, Program, Project, Risk, Unit, UserProfile } from "../../types";
 import { IDataService } from "../IDataService";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
@@ -50,9 +50,40 @@ export const localAdapter: IDataService = {
         });
     },
 
+    // --- PROJECTS ---
+    async getProjects(programId: string): Promise<Project[]> {
+        const res = await fetch(`${API_URL}/programs/${programId}/projects`);
+        if (!res.ok) throw new Error('Failed to fetch projects');
+        return res.json();
+    },
+    async createProject(project: Omit<Project, 'id'>): Promise<Project> {
+        const res = await fetch(`${API_URL}/projects`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(project)
+        });
+        if (!res.ok) throw new Error('Failed to create project');
+        return res.json();
+    },
+    async updateProject(id: string, updates: Partial<Project>): Promise<void> {
+        await fetch(`${API_URL}/projects/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+    },
+    async deleteProject(id: string): Promise<void> {
+        await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
+    },
+
     // --- ACTIONS ---
     async getActions(programId): Promise<Action[]> {
         const res = await fetch(`${API_URL}/programs/${programId}/actions`);
+        return res.json();
+    },
+    async getProjectActions(projectId: string): Promise<Action[]> {
+        const res = await fetch(`${API_URL}/projects/${projectId}/actions`);
+        if (!res.ok) throw new Error('Failed to fetch project actions');
         return res.json();
     },
     async getAllActions(): Promise<Action[]> {
@@ -99,15 +130,45 @@ export const localAdapter: IDataService = {
 
     // --- DELIVERABLES ---
     async getAllDeliverables(): Promise<Deliverable[]> { return []; },
-    async getDeliverables(actionId): Promise<Deliverable[]> { return []; },
-    async createDeliverable(data): Promise<Deliverable> { return data as any; },
-    async deleteDeliverable(id): Promise<void> { },
+    async getDeliverables(actionId): Promise<Deliverable[]> {
+        const res = await fetch(`${API_URL}/actions/${actionId}/deliverables`);
+        return res.json();
+    },
+    async createDeliverable(data): Promise<Deliverable> {
+        const res = await fetch(`${API_URL}/deliverables`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+    async deleteDeliverable(id): Promise<void> {
+        await fetch(`${API_URL}/deliverables/${id}`, { method: 'DELETE' });
+    },
 
     // --- RISKS ---
-    async getRisks(programId): Promise<Risk[]> { return []; },
-    async createRisk(data): Promise<Risk> { return data as any; },
-    async deleteRisk(id): Promise<void> { },
-    async updateRisk(id, updates): Promise<void> { },
+    async getRisks(programId): Promise<Risk[]> {
+        const res = await fetch(`${API_URL}/programs/${programId}/risks`);
+        return res.json();
+    },
+    async createRisk(data): Promise<Risk> {
+        const res = await fetch(`${API_URL}/risks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+    async deleteRisk(id): Promise<void> {
+        await fetch(`${API_URL}/risks/${id}`, { method: 'DELETE' });
+    },
+    async updateRisk(id, updates): Promise<void> {
+        await fetch(`${API_URL}/risks/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+    },
 
     // --- SETTINGS ---
     async getGlobalSettings(): Promise<{ geminiApiKey?: string }> {

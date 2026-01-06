@@ -62,6 +62,57 @@ app.delete('/api/programs/:id', async (req, res) => {
     } catch (e) { handleError(res, e, 'Failed to delete program'); }
 });
 
+// --- PROJECTS ---
+
+app.get('/api/projects', async (req, res) => {
+    try {
+        const projects = await prisma.project.findMany();
+        res.json(projects);
+    } catch (e) { handleError(res, e, 'Failed to fetch projects'); }
+});
+
+app.get('/api/programs/:programId/projects', async (req, res) => {
+    try {
+        const projects = await prisma.project.findMany({
+            where: { programId: req.params.programId }
+        });
+        res.json(projects);
+    } catch (e) { handleError(res, e, 'Failed to fetch program projects'); }
+});
+
+app.post('/api/projects', async (req, res) => {
+    try {
+        const project = await prisma.project.create({ data: req.body });
+        res.json(project);
+    } catch (e) { handleError(res, e, 'Failed to create project'); }
+});
+
+app.put('/api/projects/:id', async (req, res) => {
+    try {
+        const project = await prisma.project.update({
+            where: { id: req.params.id },
+            data: req.body
+        });
+        res.json(project);
+    } catch (e) { handleError(res, e, 'Failed to update project'); }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+    try {
+        await prisma.project.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { handleError(res, e, 'Failed to delete project'); }
+});
+
+app.get('/api/projects/:projectId/actions', async (req, res) => {
+    try {
+        const actions = await prisma.action.findMany({
+            where: { projectId: req.params.projectId }
+        });
+        res.json(actions);
+    } catch (e) { handleError(res, e, 'Failed to fetch project actions'); }
+});
+
 // --- ACTIONS ---
 
 app.get('/api/actions', async (req, res) => {
@@ -104,6 +155,31 @@ app.delete('/api/actions/:id', async (req, res) => {
     } catch (e) { handleError(res, e, 'Failed to delete action'); }
 });
 
+// --- DELIVERABLES ---
+
+app.get('/api/actions/:actionId/deliverables', async (req, res) => {
+    try {
+        const deliverables = await prisma.deliverable.findMany({
+            where: { actionId: req.params.actionId }
+        });
+        res.json(deliverables);
+    } catch (e) { handleError(res, e, 'Failed to fetch deliverables'); }
+});
+
+app.post('/api/deliverables', async (req, res) => {
+    try {
+        const deliverable = await prisma.deliverable.create({ data: req.body });
+        res.json(deliverable);
+    } catch (e) { handleError(res, e, 'Failed to create deliverable'); }
+});
+
+app.delete('/api/deliverables/:id', async (req, res) => {
+    try {
+        await prisma.deliverable.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { handleError(res, e, 'Failed to delete deliverable'); }
+});
+
 // --- INDICATORS ---
 
 app.get('/api/programs/:programId/indicators', async (req, res) => {
@@ -120,6 +196,48 @@ app.post('/api/indicators', async (req, res) => {
         const indicator = await prisma.indicator.create({ data: req.body });
         res.json(indicator);
     } catch (e) { handleError(res, e, 'Failed to create indicator'); }
+});
+
+app.delete('/api/indicators/:id', async (req, res) => {
+    try {
+        await prisma.indicator.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { handleError(res, e, 'Failed to delete indicator'); }
+});
+
+app.put('/api/indicators/:id', async (req, res) => {
+    try {
+        const indicator = await prisma.indicator.update({
+            where: { id: req.params.id },
+            data: req.body
+        });
+        res.json(indicator);
+    } catch (e) { handleError(res, e, 'Failed to update indicator'); }
+});
+
+// --- RISKS ---
+
+app.get('/api/programs/:programId/risks', async (req, res) => {
+    try {
+        const risks = await prisma.risk.findMany({
+            where: { programId: req.params.programId }
+        });
+        res.json(risks);
+    } catch (e) { handleError(res, e, 'Failed to fetch risks'); }
+});
+
+app.post('/api/risks', async (req, res) => {
+    try {
+        const risk = await prisma.risk.create({ data: req.body });
+        res.json(risk);
+    } catch (e) { handleError(res, e, 'Failed to create risk'); }
+});
+
+app.delete('/api/risks/:id', async (req, res) => {
+    try {
+        await prisma.risk.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { handleError(res, e, 'Failed to delete risk'); }
 });
 
 // --- SETTINGS ---
