@@ -6,3 +6,6 @@
 
 # firebase cache local
 .firebase/
+
+# node_modules
+node_modules/
