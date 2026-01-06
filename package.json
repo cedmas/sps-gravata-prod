@@ -1,0 +1,14 @@
+{
+    "name": "peg-root",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "concurrently \"npm run dev --prefix sps-backend\" \"npm run dev --prefix sps-frontend\"",
+        "install:all": "npm install --prefix sps-backend && npm install --prefix sps-frontend",
+        "db:push": "npm run db:push --prefix sps-backend",
+        "db:studio": "npx prisma studio --schema=sps-backend/prisma/schema.prisma"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.0"
+    }
+}
