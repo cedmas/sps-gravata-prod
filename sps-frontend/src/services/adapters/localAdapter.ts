@@ -24,8 +24,8 @@ export const localAdapter: IDataService = {
     async createUnit(unit): Promise<Unit> {
         return { id: Math.random().toString(), ...unit };
     },
-    async deleteUnit(id): Promise<void> { },
-    async updateUnit(id, updates): Promise<void> { },
+    async deleteUnit(_id): Promise<void> { },
+    async updateUnit(_id, _updates): Promise<void> { },
 
     // --- PROGRAMS ---
     async getPrograms(): Promise<Program[]> {
@@ -42,7 +42,7 @@ export const localAdapter: IDataService = {
         if (!res.ok) throw new Error('Failed to create program');
         return res.json();
     },
-    async updateProgram(id, updates, userName): Promise<void> {
+    async updateProgram(id, updates, _userName): Promise<void> {
         await fetch(`${API_URL}/programs/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -90,7 +90,7 @@ export const localAdapter: IDataService = {
         const res = await fetch(`${API_URL}/actions`);
         return res.json();
     },
-    async createAction(action, userName): Promise<Action> {
+    async createAction(action, _userName): Promise<Action> {
         const res = await fetch(`${API_URL}/actions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -98,7 +98,7 @@ export const localAdapter: IDataService = {
         });
         return res.json();
     },
-    async updateAction(id, updates, userName): Promise<void> {
+    async updateAction(id, updates, _userName): Promise<void> {
         await fetch(`${API_URL}/actions/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -125,8 +125,8 @@ export const localAdapter: IDataService = {
         });
         return res.json();
     },
-    async updateIndicator(id, updates): Promise<void> { },
-    async deleteIndicator(id): Promise<void> { },
+    async updateIndicator(_id, _updates): Promise<void> { },
+    async deleteIndicator(_id): Promise<void> { },
 
     // --- DELIVERABLES ---
     async getAllDeliverables(): Promise<Deliverable[]> { return []; },

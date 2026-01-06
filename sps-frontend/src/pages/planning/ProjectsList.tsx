@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Folder, Trash, Edit } from 'lucide-react';
+import { Plus, Folder, Trash } from 'lucide-react';
 import { firestoreDb } from '../../services/firestoreDb';
 import { Project } from '../../types';
 import ActionsList from './ActionsList';
