@@ -1,22 +1,26 @@
 import { useState } from 'react';
-import { Edit, Target, AlertTriangle, Activity, Layers, FileText } from 'lucide-react';
+import { Edit, Target, AlertTriangle, Activity, Layers, FileText, Trash2 } from 'lucide-react';
 import { Program, Axis } from '../../types';
 import { ValidationResult } from '../../services/validator';
 import ProjectsList from './ProjectsList';
 import IndicatorsList from './IndicatorsList';
 import RisksList from './RisksList';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ProgramCardProps {
     program: Program;
     axis?: Axis;
     validation?: ValidationResult;
     onEdit: () => void;
+    onDelete: () => void;
 }
 
 type Tab = 'overview' | 'structure' | 'indicators' | 'risks';
 
-export default function ProgramCard({ program, axis, validation, onEdit }: ProgramCardProps) {
+export default function ProgramCard({ program, axis, validation, onEdit, onDelete }: ProgramCardProps) {
     const [activeTab, setActiveTab] = useState<Tab>('structure');
+    const { userProfile } = useAuth();
+    const canDelete = ['admin', 'controladoria', 'gestor'].includes(userProfile?.role || '') || userProfile?.role === 'admin';
 
     // Helper to calculate status color
     const getStatusColor = (isValid?: boolean) => {
@@ -42,13 +46,24 @@ export default function ProgramCard({ program, axis, validation, onEdit }: Progr
                         </div>
                         <h3 className="text-xl font-bold text-slate-900 leading-tight">{program.name}</h3>
                     </div>
-                    <button
-                        onClick={onEdit}
-                        className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Editar Programa"
-                    >
-                        <Edit size={18} />
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={onEdit}
+                            className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar Programa"
+                        >
+                            <Edit size={18} />
+                        </button>
+                        {canDelete && (
+                            <button
+                                onClick={onDelete}
+                                className="text-slate-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Excluir Programa"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Validation Alerts (if any) */}

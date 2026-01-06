@@ -5,7 +5,8 @@ Bem-vindo ao repositório oficial do PEG. Este sistema gerencia o planejamento e
 ## 📚 Documentação
 A documentação completa está disponível na pasta `sps-frontend/docs/`.
 
-- **[🏠 Manual do Usuário](sps-frontend/docs/USER_MANUAL.md)**: Guia completo de uso para Prefeito, Secretários e Pontos Focais.
+- **[🏠 Manual do Usuário (Técnico)](sps-frontend/docs/USER_MANUAL.md)**: Referência completa e técnica.
+- **[📖 Manual Prático](sps-frontend/docs/MANUAL_PRATICO.md)**: Guia passo a passo simplificado para o dia a dia.
 - **[🏗️ Arquitetura Técnica](sps-frontend/docs/ARCHITECTURE.md)**: Detalhes sobre Stack, Banco de Dados e Segurança.
 - **[🚀 Guia de Deploy](sps-frontend/docs/DEPLOYMENT.md)**: Como configurar, rodar localmente e publicar.
 

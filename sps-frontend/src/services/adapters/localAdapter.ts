@@ -28,10 +28,15 @@ export const localAdapter: IDataService = {
     async updateUnit(_id, _updates): Promise<void> { },
 
     // --- PROGRAMS ---
-    async getPrograms(): Promise<Program[]> {
+    async getPrograms(unitId?: string): Promise<Program[]> {
         const res = await fetch(`${API_URL}/programs`);
         if (!res.ok) throw new Error('Failed to fetch programs');
-        return res.json();
+        const programs: Program[] = await res.json();
+
+        if (unitId) {
+            return programs.filter(p => p.unitId === unitId);
+        }
+        return programs;
     },
     async createProgram(program): Promise<Program> {
         const res = await fetch(`${API_URL}/programs`, {
@@ -48,6 +53,9 @@ export const localAdapter: IDataService = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates)
         });
+    },
+    async deleteProgram(id): Promise<void> {
+        await fetch(`${API_URL}/programs/${id}`, { method: 'DELETE' });
     },
 
     // --- PROJECTS ---

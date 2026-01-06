@@ -251,6 +251,17 @@ export default function ProgramsPage() {
                                     setAuditResult(null);
                                     setIsModalOpen(true);
                                 }}
+                                onDelete={async () => {
+                                    if (window.confirm("Tem certeza que deseja excluir este programa? Todas as ações e indicadores vinculados podem ficar órfãos.")) {
+                                        try {
+                                            await firestoreDb.deleteProgram(prog.id);
+                                            toast.success("Programa excluído.");
+                                            loadData();
+                                        } catch (e: any) {
+                                            toast.error("Erro ao excluir.", { description: e.message });
+                                        }
+                                    }
+                                }}
                             />
                         )
                     })

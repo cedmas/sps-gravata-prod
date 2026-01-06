@@ -88,8 +88,14 @@ export const firebaseAdapter: IDataService = {
     },
 
     // --- Programs ---
-    async getPrograms(): Promise<Program[]> {
-        const snapshot = await getDocs(collection(db, COLLECTIONS.PROGRAMS));
+    async getPrograms(unitId?: string): Promise<Program[]> {
+        let q;
+        if (unitId) {
+            q = query(collection(db, COLLECTIONS.PROGRAMS), where("unitId", "==", unitId));
+        } else {
+            q = query(collection(db, COLLECTIONS.PROGRAMS));
+        }
+        const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
     },
 
@@ -108,6 +114,11 @@ export const firebaseAdapter: IDataService = {
 
         const diff = calculateDiff(oldData, updates);
         await logActivity(`Programa atualizado: ${oldData?.name || id}`, userName, diff, 'Program', id, 'UPDATE');
+    },
+
+    async deleteProgram(id: string): Promise<void> {
+        await deleteDoc(doc(db, COLLECTIONS.PROGRAMS, id));
+        await logActivity(`Programa excluído: ${id}`, 'Sistema', null, 'Program', id, 'DELETE');
     },
 
     // --- Projects ---

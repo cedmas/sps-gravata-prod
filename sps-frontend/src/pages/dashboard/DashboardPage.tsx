@@ -46,96 +46,147 @@ export default function DashboardPage() {
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
     useEffect(() => {
-        loadDashboardData();
-    }, []);
+        if (userProfile) {
+            loadDashboardData();
+        }
+    }, [userProfile?.uid, userProfile?.role, userProfile?.unitId]);
 
     const loadDashboardData = async () => {
         setLoading(true);
-        const [programs, actions, indicators, deliverables, logs] = await Promise.all([
-            firestoreDb.getPrograms(),
-            firestoreDb.getAllActions(),
-            firestoreDb.getAllIndicators(),
-            firestoreDb.getAllDeliverables(),
-            firestoreDb.getRecentActivity()
-        ]);
+        try {
+            const isGlobalView = ['admin', 'prefeito', 'controladoria'].includes(userProfile?.role || '');
+            const userUnitId = userProfile?.unitId;
 
-        // --- Data Segmentation Logic ---
-        const isGlobalView = ['admin', 'prefeito', 'controladoria'].includes(userProfile?.role || '');
-        const userUnitId = userProfile?.unitId;
+            let fetchedPrograms: any[] = [];
+            let fetchedActions: any[] = [];
+            let fetchedIndicators: any[] = [];
+            let fetchedDeliverables: any[] = [];
+            let fetchedLogs: any[] = [];
 
-        let visiblePrograms = programs;
-        let visibleActions = actions;
-        let visibleIndicators = indicators;
+            if (isGlobalView) {
+                // --- ADMIN / PREFEITO: Fetch All ---
+                const [p, a, i, d, l] = await Promise.all([
+                    firestoreDb.getPrograms(),
+                    firestoreDb.getAllActions(),
+                    firestoreDb.getAllIndicators(),
+                    firestoreDb.getAllDeliverables(),
+                    firestoreDb.getRecentActivity()
+                ]);
+                fetchedPrograms = p;
+                fetchedActions = a;
+                fetchedIndicators = i;
+                fetchedDeliverables = d;
+                fetchedLogs = l;
 
-        if (!isGlobalView && userUnitId) {
-            visiblePrograms = programs.filter(p => p.unitId === userUnitId);
-            const visibleProgramIds = visiblePrograms.map(p => p.id);
+                // Client-side filtering for display if needed (e.g. if I am Admin but selected a filter? 
+                // Currently Dashboard shows aggregates. Prefeito sees all.)
+            } else if (userUnitId) {
+                // --- UNIT MANAGER / FOCAL POINT: Fetch Scoped ---
+                // 1. Get Programs for this Unit
+                fetchedPrograms = await firestoreDb.getPrograms(userUnitId);
 
-            visibleActions = actions.filter(a => visibleProgramIds.includes(a.programId));
-            visibleIndicators = indicators.filter(i => visibleProgramIds.includes(i.programId));
-        } else if (!isGlobalView && !userUnitId) {
-            // User has no privilege and no unit assigned
-            visiblePrograms = [];
-            visibleActions = [];
-            visibleIndicators = [];
-        }
+                // 2. Get Actions & Indicators for these programs
+                // We use Promise.all to fetch in parallel for each program
+                if (fetchedPrograms.length > 0) {
+                    const programIds = fetchedPrograms.map(p => p.id);
 
-        // Aggregate Action Status (Using Filtered Data)
-        const statusCounts = visibleActions.reduce((acc, curr) => {
-            acc[curr.status] = (acc[curr.status] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
+                    const [actionsResults, indicatorsResults] = await Promise.all([
+                        Promise.all(programIds.map(pid => firestoreDb.getActions(pid))),
+                        Promise.all(programIds.map(pid => firestoreDb.getIndicators(pid)))
+                        // Logs might be restricted, skipping global logs for now or implement unit-logs later
+                    ]);
 
-        const statusChartData = [
-            { name: 'Não Iniciada', value: statusCounts['not_started'] || 0, color: '#94a3b8' },
-            { name: 'Em Andamento', value: statusCounts['in_progress'] || 0, color: '#3b82f6' },
-            { name: 'Atrasada', value: statusCounts['delayed'] || 0, color: '#ef4444' },
-            { name: 'Concluída', value: statusCounts['completed'] || 0, color: '#22c55e' }
-        ];
+                    fetchedActions = actionsResults.flat();
+                    fetchedIndicators = indicatorsResults.flat();
 
-        // Aggregate Program Health (Validation - In Memory)
-        let validCount = 0;
-        for (const prog of visiblePrograms) {
-            // Check Indicators
-            const hasIndicators = visibleIndicators.some(i => i.programId === prog.id);
-            if (!hasIndicators) continue;
-
-            // Check Actions
-            const progActions = visibleActions.filter(a => a.programId === prog.id);
-            if (progActions.length === 0) continue;
-
-            // Check Deliverables for each Action
-            let allActionsHaveDeliverables = true;
-            for (const action of progActions) {
-                const hasDeliverables = deliverables.some(d => d.actionId === action.id);
-                if (!hasDeliverables) {
-                    allActionsHaveDeliverables = false;
-                    break;
+                    // 3. Get Deliverables for the Actions
+                    if (fetchedActions.length > 0) {
+                        const actionIds = fetchedActions.map(a => a.id);
+                        // Batch/Iterative fetch for deliverables
+                        const deliverablePromises = actionIds.map(aid => firestoreDb.getDeliverables(aid));
+                        const deliverablesResults = await Promise.all(deliverablePromises);
+                        fetchedDeliverables = deliverablesResults.flat();
+                    }
                 }
+            } else {
+                // No unit, no global role -> Empty
+                fetchedPrograms = [];
             }
 
-            if (allActionsHaveDeliverables) validCount++;
+            // --- Data Segmentation Logic (Legacy/Cleanup) ---
+            // If we are global, we might still want to filter if a filter UI existed, but 
+            // for now Global sees all. If we are restricted, we ALREADY fetched only what we can see.
+            // So visible data IS fetched data.
+
+            // However, the original code had logic to filter global data by unit if unitId was present?
+            // "if (!isGlobalView && userUnitId) ..."
+            // The new logic handles that at fetch time.
+            // If isGlobalView is true (Admin), but they have a unitId? (Unlikely, Admins usually don't have unitId, or ignore it)
+            // Let's assume Global Viewers see EVERYTHING.
+
+            const visiblePrograms = fetchedPrograms;
+            const visibleActions = fetchedActions;
+            const visibleIndicators = fetchedIndicators;
+
+            // Aggregate Action Status
+            const statusCounts = visibleActions.reduce((acc: any, curr: any) => {
+                acc[curr.status] = (acc[curr.status] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+
+            const statusChartData = [
+                { name: 'Não Iniciada', value: statusCounts['not_started'] || 0, color: '#94a3b8' },
+                { name: 'Em Andamento', value: statusCounts['in_progress'] || 0, color: '#3b82f6' },
+                { name: 'Atrasada', value: statusCounts['delayed'] || 0, color: '#ef4444' },
+                { name: 'Concluída', value: statusCounts['completed'] || 0, color: '#22c55e' }
+            ];
+
+            // Aggregate Program Health
+            let validCount = 0;
+            for (const prog of visiblePrograms) {
+                // Check Indicators
+                const hasIndicators = visibleIndicators.some((i: any) => i.programId === prog.id);
+                if (!hasIndicators) continue;
+
+                // Check Actions
+                const progActions = visibleActions.filter((a: any) => a.programId === prog.id);
+                if (progActions.length === 0) continue;
+
+                // Check Deliverables for each Action
+                let allActionsHaveDeliverables = true;
+                for (const action of progActions) {
+                    const hasDeliverables = fetchedDeliverables.some((d: any) => d.actionId === action.id);
+                    if (!hasDeliverables) {
+                        allActionsHaveDeliverables = false;
+                        break;
+                    }
+                }
+
+                if (allActionsHaveDeliverables) validCount++;
+            }
+
+            const healthChartData = [
+                { name: 'Prontos', value: validCount, color: '#22c55e' },
+                { name: 'Pendentes', value: visiblePrograms.length - validCount, color: '#f59e0b' }
+            ];
+
+            setStats({
+                programs: visiblePrograms.length,
+                actions: visibleActions.length,
+                indicators: visibleIndicators.length,
+                validPrograms: validCount
+            });
+
+            setActionStatusData(statusChartData);
+            setProgramHealthData(healthChartData);
+            setRecentActivity(fetchedLogs);
+
+        } catch (error) {
+            console.error("Dashboard Load Error:", error);
+            toast.error("Erro ao carregar dados do dashboard.");
+        } finally {
+            setLoading(false);
         }
-
-        const healthChartData = [
-            { name: 'Prontos', value: validCount, color: '#22c55e' },
-            { name: 'Pendentes', value: visiblePrograms.length - validCount, color: '#f59e0b' }
-        ];
-
-        setStats({
-            programs: visiblePrograms.length,
-            actions: visibleActions.length,
-            indicators: visibleIndicators.length,
-            validPrograms: validCount
-        });
-
-        setActionStatusData(statusChartData);
-        setProgramHealthData(healthChartData);
-        setRecentActivity(logs);
-        setLoading(false);
-        setProgramHealthData(healthChartData);
-        setRecentActivity(logs);
-        setLoading(false);
     };
 
     const handleGenerateSummary = async () => {
@@ -186,6 +237,8 @@ export default function DashboardPage() {
                     Sala de Situação (TV)
                 </button>
             </div>
+
+
 
             {/* Smart Summary Card - Restricted Access */}
             {canViewSmartSummary && (

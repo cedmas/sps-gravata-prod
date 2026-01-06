@@ -11,9 +11,10 @@ export interface IDataService {
     updateUnit(id: string, updates: Partial<Unit>): Promise<void>;
 
     // Programs
-    getPrograms(): Promise<Program[]>;
+    getPrograms(unitId?: string): Promise<Program[]>;
     createProgram(program: Omit<Program, 'id'>): Promise<Program>;
     updateProgram(id: string, updates: Partial<Program>, userName?: string): Promise<void>;
+    deleteProgram(id: string): Promise<void>;
 
     // Projects
     getProjects(programId: string): Promise<Project[]>;
