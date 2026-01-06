@@ -15,14 +15,11 @@ export const localAdapter: IDataService = {
     },
 
     // --- UNITS ---
+    // --- UNITS ---
     async getUnits(): Promise<Unit[]> {
-        // Using mock units if backend not implementing units yet
-        // Ideally fetch from /api/units
-        return [
-            { id: '1', name: 'Secretaria de Educação', acronym: 'SEDUC' },
-            { id: '2', name: 'Secretaria de Saúde', acronym: 'SMS' },
-            { id: '3', name: 'Secretaria de Obras', acronym: 'SEINFRA' }
-        ];
+        const res = await fetch(`${API_URL}/units`);
+        if (!res.ok) throw new Error('Failed to fetch units');
+        return res.json();
     },
     async createUnit(unit): Promise<Unit> {
         return { id: Math.random().toString(), ...unit };
@@ -127,19 +124,61 @@ export const localAdapter: IDataService = {
     },
 
     // --- EVIDENCES ---
-    async getEvidences(actionId): Promise<any[]> { return []; },
-    async createEvidence(data): Promise<any> { return data; },
-    async deleteEvidence(id): Promise<void> { },
-    async checkActionHasEvidence(actionId): Promise<boolean> { return true; }, // Bypassing for now
+    async getEvidences(actionId?: string): Promise<any[]> {
+        const url = actionId
+            ? `${API_URL}/actions/${actionId}/evidences`
+            : `${API_URL}/evidences`;
+
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        return res.json();
+    },
+    async createEvidence(data): Promise<any> {
+        const res = await fetch(`${API_URL}/evidences`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+    async deleteEvidence(id): Promise<void> {
+        await fetch(`${API_URL}/evidences/${id}`, { method: 'DELETE' });
+    },
+    async checkActionHasEvidence(actionId): Promise<boolean> {
+        const evidences = await this.getEvidences(actionId);
+        return evidences.length > 0;
+    },
 
     // --- USERS ---
     async getUser(uid): Promise<UserProfile | null> {
-        return { uid, email: 'local@admin.com', displayName: 'Local Admin', role: 'admin' };
+        const res = await fetch(`${API_URL}/users/${uid}`);
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error('Failed to fetch user');
+        return res.json();
     },
-    async createUser(user): Promise<void> { },
-    async updateUser(uid, data): Promise<void> { },
-    async getAllUsers(): Promise<UserProfile[]> { return []; },
-    async deleteUser(uid): Promise<void> { },
+    async createUser(user): Promise<void> {
+        await fetch(`${API_URL}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(user)
+        });
+    },
+    async updateUser(uid, data): Promise<void> {
+        // Prepare payload with uid for upsert
+        const payload = { ...data, uid };
+        await fetch(`${API_URL}/users`, {
+            method: 'POST', // Backend uses upsert on POST
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    },
+    async getAllUsers(): Promise<UserProfile[]> {
+        const res = await fetch(`${API_URL}/users`);
+        return res.json();
+    },
+    async deleteUser(uid): Promise<void> {
+        await fetch(`${API_URL}/users/${uid}`, { method: 'DELETE' });
+    },
 
     // --- LOGS ---
     async getRecentActivity(): Promise<any[]> { return []; }

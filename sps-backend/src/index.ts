@@ -20,6 +20,15 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
 
+// --- UNITS ---
+
+app.get('/api/units', async (req, res) => {
+    try {
+        const units = await prisma.unit.findMany();
+        res.json(units);
+    } catch (e) { handleError(res, e, 'Failed to fetch units'); }
+});
+
 // --- PROGRAMS ---
 
 app.get('/api/programs', async (req, res) => {
@@ -133,6 +142,79 @@ app.post('/api/settings', async (req, res) => {
         });
         res.json(settings);
     } catch (e) { handleError(res, e, 'Failed to save settings'); }
+});
+
+// --- EVIDENCES ---
+
+app.get('/api/evidences', async (req, res) => {
+    try {
+        const evidences = await prisma.evidence.findMany({
+            include: { action: { include: { program: { include: { unit: true } } } } }
+        });
+        res.json(evidences);
+    } catch (e) { handleError(res, e, 'Failed to fetch all evidences'); }
+});
+
+app.get('/api/actions/:actionId/evidences', async (req, res) => {
+    try {
+        const evidences = await prisma.evidence.findMany({
+            where: { actionId: req.params.actionId }
+        });
+        res.json(evidences);
+    } catch (e) { handleError(res, e, 'Failed to fetch evidences'); }
+});
+
+app.post('/api/evidences', async (req, res) => {
+    try {
+        const evidence = await prisma.evidence.create({ data: req.body });
+        res.json(evidence);
+    } catch (e) { handleError(res, e, 'Failed to create evidence'); }
+});
+
+app.delete('/api/evidences/:id', async (req, res) => {
+    try {
+        await prisma.evidence.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { handleError(res, e, 'Failed to delete evidence'); }
+});
+
+// --- USERS ---
+
+app.get('/api/users', async (req, res) => {
+    try {
+        const users = await prisma.user.findMany();
+        res.json(users);
+    } catch (e) { handleError(res, e, 'Failed to fetch users'); }
+});
+
+app.get('/api/users/:uid', async (req, res) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { uid: req.params.uid }
+        });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json(user);
+    } catch (e) { handleError(res, e, 'Failed to fetch user'); }
+});
+
+app.post('/api/users', async (req, res) => {
+    try {
+        const user = await prisma.user.upsert({
+            where: { uid: req.body.uid },
+            update: req.body,
+            create: req.body
+        });
+        res.json(user);
+    } catch (e) { handleError(res, e, 'Failed to save user'); }
+});
+
+app.delete('/api/users/:uid', async (req, res) => {
+    try {
+        await prisma.user.delete({ where: { uid: req.params.uid } });
+        res.json({ success: true });
+    } catch (e) { handleError(res, e, 'Failed to delete user'); }
 });
 
 app.listen(PORT, () => {

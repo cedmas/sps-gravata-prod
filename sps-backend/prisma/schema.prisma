@@ -117,6 +117,8 @@ model Deliverable {
 model Evidence {
   id        String   @id @default(uuid())
   actionId  String
+  title     String?  // Added
+  description String? // Added
   url       String
   type      String
   createdAt DateTime @default(now())

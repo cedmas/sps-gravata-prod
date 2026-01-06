@@ -30,8 +30,13 @@ async function migrate() {
         const unitsSnap = await getDocs(collection(db, "units"));
         for (const doc of unitsSnap.docs) {
             const data = doc.data();
-            await prisma.unit.create({
-                data: {
+            await prisma.unit.upsert({
+                where: { id: doc.id },
+                update: {
+                    name: data.name,
+                    acronym: data.acronym || data.name.substring(0, 3).toUpperCase()
+                },
+                create: {
                     id: doc.id,
                     name: data.name,
                     acronym: data.acronym || data.name.substring(0, 3).toUpperCase()
@@ -41,7 +46,6 @@ async function migrate() {
         }
 
         // --- AXES ---
-        // (Assuming axes are static in local but might be in firebase, let's create static ones if empty)
         console.log("\n📐 Ensures AXES exist...");
         const axes = [
             { id: '1', name: 'Gestão e Governança', color: 'blue' },
@@ -49,10 +53,11 @@ async function migrate() {
             { id: '3', name: 'Infraestrutura e Urbanismo', color: 'gray' },
         ];
         for (const axis of axes) {
-            const exists = await prisma.axis.findUnique({ where: { id: axis.id } });
-            if (!exists) {
-                await prisma.axis.create({ data: axis });
-            }
+            await prisma.axis.upsert({
+                where: { id: axis.id },
+                update: axis,
+                create: axis
+            });
         }
 
         // --- PROGRAMS ---
@@ -61,22 +66,30 @@ async function migrate() {
         for (const doc of progSnap.docs) {
             const data = doc.data();
 
-            // Check if unit/axis exists (integrity)
             const unitExists = await prisma.unit.findUnique({ where: { id: data.unitId } });
             if (!unitExists) {
                 console.warn(`   ⚠️ Skipping Program ${data.name}: Unit ${data.unitId} not found.`);
                 continue;
             }
 
-            await prisma.program.create({
-                data: {
+            await prisma.program.upsert({
+                where: { id: doc.id },
+                update: {
+                    name: data.name,
+                    objective: data.objective || "",
+                    publicProblem: data.publicProblem || "",
+                    targetAudience: data.targetAudience || "",
+                    unitId: data.unitId,
+                    axisId: data.axisId || "1"
+                },
+                create: {
                     id: doc.id,
                     name: data.name,
                     objective: data.objective || "",
                     publicProblem: data.publicProblem || "",
                     targetAudience: data.targetAudience || "",
                     unitId: data.unitId,
-                    axisId: data.axisId || "1" // Default to 1 if missing
+                    axisId: data.axisId || "1"
                 }
             });
             console.log(`   + Program: ${data.name}`);
@@ -88,21 +101,30 @@ async function migrate() {
         for (const doc of actSnap.docs) {
             const data = doc.data();
 
-            // Check parent program
             const progExists = await prisma.program.findUnique({ where: { id: data.programId } });
             if (!progExists) {
                 console.warn(`   ⚠️ Skipping Action ${data.name}: Program ${data.programId} not found.`);
                 continue;
             }
 
-            await prisma.action.create({
-                data: {
+            await prisma.action.upsert({
+                where: { id: doc.id },
+                update: {
+                    programId: data.programId,
+                    name: data.name,
+                    responsible: data.responsible || "Não informado",
+                    startDate: new Date(),
+                    endDate: new Date(),
+                    status: data.status || "not_started",
+                    weight: Number(data.weight) || 1
+                },
+                create: {
                     id: doc.id,
                     programId: data.programId,
                     name: data.name,
                     responsible: data.responsible || "Não informado",
-                    startDate: new Date(), // Mock date if missing, or parse data.startDate
-                    endDate: new Date(),   // Mock date
+                    startDate: new Date(),
+                    endDate: new Date(),
                     status: data.status || "not_started",
                     weight: Number(data.weight) || 1
                 }
@@ -118,8 +140,17 @@ async function migrate() {
             const progExists = await prisma.program.findUnique({ where: { id: data.programId } });
             if (!progExists) continue;
 
-            await prisma.indicator.create({
-                data: {
+            await prisma.indicator.upsert({
+                where: { id: doc.id },
+                update: {
+                    programId: data.programId,
+                    name: data.name,
+                    description: data.description || "",
+                    baseline: Number(data.baseline) || 0,
+                    target: Number(data.target) || 0,
+                    unit: data.unit || "un"
+                },
+                create: {
                     id: doc.id,
                     programId: data.programId,
                     name: data.name,
@@ -130,6 +161,32 @@ async function migrate() {
                 }
             });
             console.log(`   + Indicator: ${data.name}`);
+        }
+
+        // --- USERS ---
+        console.log("\n👥 Migrating USERS...");
+        const usersSnap = await getDocs(collection(db, "users"));
+        for (const doc of usersSnap.docs) {
+            const data = doc.data();
+            await prisma.user.upsert({
+                where: { uid: doc.id },
+                update: {
+                    email: data.email,
+                    displayName: data.displayName || "Sem Nome",
+                    role: data.role || "viewer",
+                    unitId: data.unitId || null,
+                    active: data.active !== undefined ? data.active : true
+                },
+                create: {
+                    uid: doc.id,
+                    email: data.email,
+                    displayName: data.displayName || "Sem Nome",
+                    role: data.role || "viewer",
+                    unitId: data.unitId || null,
+                    active: data.active !== undefined ? data.active : true
+                }
+            });
+            console.log(`   + User: ${data.email}`);
         }
 
         console.log("\n✅ Migration Completed Successfully!");
