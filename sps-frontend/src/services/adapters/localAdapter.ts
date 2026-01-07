@@ -8,9 +8,12 @@ export const localAdapter: IDataService = {
     async getAxes(): Promise<Axis[]> {
         // Mock static axes for now, as backend doesn't store them yet
         return [
-            { id: '1', name: 'Gestão e Governança', color: 'blue' },
-            { id: '2', name: 'Desenvolvimento Social', color: 'green' },
-            { id: '3', name: 'Infraestrutura e Urbanismo', color: 'gray' },
+            { id: '1', name: 'Governança e Gestão', color: 'blue' },
+            { id: '2', name: 'Saúde e Qualidade de Vida', color: 'rose' },
+            { id: '3', name: 'Educação, Cultura e Esporte', color: 'amber' },
+            { id: '4', name: 'Desenvolvimento Econômico e Geração de Renda', color: 'emerald' },
+            { id: '5', name: 'Infraestrutura e Mobilidade', color: 'slate' },
+            { id: '6', name: 'Meio Ambiente e Sustentabilidade', color: 'green' },
         ];
     },
 

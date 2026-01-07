@@ -3,10 +3,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Trash2, Calendar, User, Activity, Edit } from 'lucide-react';
 import { firestoreDb } from '../../services/firestoreDb';
 import { Action, ActionStatus, UserProfile } from '../../types';
-import { toast } from 'sonner';
 
-import DeliverablesList from './DeliverablesList';
-import InlineEvidenceUpload from '../../components/planning/InlineEvidenceUpload';
+
+
 
 interface ActionsListProps {
     programId: string;
@@ -101,17 +100,6 @@ export default function ActionsList({ programId, projectId, orphanedOnly }: Acti
 
 
     const handleStatusChange = async (id: string, newStatus: ActionStatus) => {
-        // Gatekeeper: Block 'completed' status if no evidence attached
-        if (newStatus === 'completed') {
-            const hasEvidence = await firestoreDb.checkActionHasEvidence(id);
-            if (!hasEvidence) {
-                toast.error("Ação não pode ser concluída", {
-                    description: "É necessário anexar pelo menos uma evidência (foto ou documento) antes de concluir a ação."
-                });
-                return;
-            }
-        }
-
         // Optimistic update
         setActions(actions.map(a => a.id === id ? { ...a, status: newStatus } : a));
         await firestoreDb.updateAction(id, { status: newStatus }, userProfile?.displayName);
@@ -249,18 +237,12 @@ export default function ActionsList({ programId, projectId, orphanedOnly }: Acti
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <select
-                                            className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border-0 cursor-pointer outline-none focus:ring-2 ring-blue-200 ${statusColors[action.status]}`}
-                                            value={action.status}
-                                            onClick={(e) => e.stopPropagation()}
-                                            onChange={(e) => handleStatusChange(action.id, e.target.value as ActionStatus)}
-                                            disabled={isReadOnly}
-                                        >
-                                            <option value="not_started">Não Iniciada</option>
-                                            <option value="in_progress">Em Andamento</option>
-                                            <option value="delayed">Atrasada</option>
-                                            <option value="completed">Concluída</option>
-                                        </select>
+                                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border border-transparent ${statusColors[action.status]}`}>
+                                            {action.status === 'not_started' && 'Não Iniciada'}
+                                            {action.status === 'in_progress' && 'Em Andamento'}
+                                            {action.status === 'delayed' && 'Atrasada'}
+                                            {action.status === 'completed' && 'Concluída'}
+                                        </span>
                                         <span className="text-sm font-medium text-gray-800">{action.name}</span>
                                     </div>
                                     <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -303,11 +285,33 @@ export default function ActionsList({ programId, projectId, orphanedOnly }: Acti
                                 </div>
                             </div>
 
-                            {/* Nested Deliverables */}
-                            <DeliverablesList actionId={action.id} readOnly={isReadOnly} />
-
-                            {/* Inline Evidence Upload */}
-                            <InlineEvidenceUpload actionId={action.id} readOnly={isReadOnly} />
+                            {/* Status Buttons Row */}
+                            <div className="flex flex-wrap gap-2 mt-3 border-t border-gray-50 pt-2">
+                                <button
+                                    onClick={() => handleStatusChange(action.id, 'not_started')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors border ${action.status === 'not_started' ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                    Não Iniciada
+                                </button>
+                                <button
+                                    onClick={() => handleStatusChange(action.id, 'in_progress')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors border ${action.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-blue-50'}`}
+                                >
+                                    Em Andamento
+                                </button>
+                                <button
+                                    onClick={() => handleStatusChange(action.id, 'delayed')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors border ${action.status === 'delayed' ? 'bg-red-100 text-red-700 border-red-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-red-50'}`}
+                                >
+                                    Atrasada
+                                </button>
+                                <button
+                                    onClick={() => handleStatusChange(action.id, 'completed')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors border ${action.status === 'completed' ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-green-50'}`}
+                                >
+                                    Concluída
+                                </button>
+                            </div>
                         </div>
                     );
                 })}

@@ -10,7 +10,7 @@ import {
     Users,
     FileText,
     X,
-    FolderOpen,
+
     MonitorPlay,
     Activity
 } from 'lucide-react';
@@ -93,14 +93,7 @@ export default function Layout() {
                         sidebarOpen={sidebarOpen}
                         userRole={userProfile?.role}
                     />
-                    <SidebarItem
-                        to="/evidences"
-                        icon={<FolderOpen size={20} />}
-                        label="Evidências"
-                        active={location.pathname === '/evidences'}
-                        sidebarOpen={sidebarOpen}
-                        userRole={userProfile?.role}
-                    />
+
                     <SidebarItem
                         to="/presentation"
                         icon={<MonitorPlay size={20} />}

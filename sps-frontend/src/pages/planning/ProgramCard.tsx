@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Edit, Target, AlertTriangle, Activity, Layers, FileText, Trash2 } from 'lucide-react';
 import { Program, Axis } from '../../types';
-import { ValidationResult } from '../../services/validator';
+
 import ProjectsList from './ProjectsList';
 import IndicatorsList from './IndicatorsList';
 import RisksList from './RisksList';
@@ -10,46 +10,65 @@ import { useAuth } from '../../contexts/AuthContext';
 interface ProgramCardProps {
     program: Program;
     axis?: Axis;
-    validation?: ValidationResult;
     onEdit: () => void;
     onDelete: () => void;
 }
 
 type Tab = 'overview' | 'structure' | 'indicators' | 'risks';
 
-export default function ProgramCard({ program, axis, validation, onEdit, onDelete }: ProgramCardProps) {
+// Minimalist Program Card with Progressive Disclosure
+export default function ProgramCard({ program, axis, onEdit, onDelete }: ProgramCardProps) {
+    const [isExpanded, setIsExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>('structure');
     const { userProfile } = useAuth();
     const canDelete = ['admin', 'controladoria', 'gestor'].includes(userProfile?.role || '') || userProfile?.role === 'admin';
 
-    // Helper to calculate status color
-    const getStatusColor = (isValid?: boolean) => {
-        if (isValid) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-    };
+    // Mock stats for the UI (Replace with real data usage if available in the future)
+    // Currently relying on lists to load their own data, so we don't have high-level stats here easily unless we fetch them.
+    // For now, removing the fake stats grid to avoid showing wrong data, 
+    // OR keeping it if the logic existed. 
+    // The previous design had stats passed in? No, it calculated them? 
+    // Actually, the previous code didn't calculate stats in the card props.
+    // I Will keep the header simple and let the progressive disclosure show the details.
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow overflow-hidden">
-            {/* Header / Banner */}
-            <div className="p-6 border-b border-slate-100 bg-white">
-                <div className="flex justify-between items-start mb-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border bg-slate-100 text-slate-600`}>
-                                {axis?.name || 'Eixo não definido'}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100/80 hover:shadow-lg transition-all duration-300 overflow-hidden mb-6 group">
+            {/* Modern Header */}
+            <div className="p-5 flex flex-col md:flex-row gap-5 justify-between items-start md:items-center bg-gradient-to-br from-white to-slate-50/50">
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                        {program.unit && (
+                            <span className="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-indigo-100">
+                                {program.unit.acronym}
                             </span>
-                            {validation && (
-                                <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border ${getStatusColor(validation.isValid)} flex items-center gap-1`}>
-                                    {validation.isValid ? '✅ Pronto' : '⚠️ Pendente'}
-                                </span>
-                            )}
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 leading-tight">{program.name}</h3>
+                        )}
+                        {axis && (
+                            <span className="text-slate-400 text-xs font-medium px-2 border-l border-slate-200 flex items-center gap-1">
+                                <Target size={10} />
+                                {axis.name}
+                            </span>
+                        )}
                     </div>
-                    <div className="flex gap-2">
+                    <h3 className="text-lg md:text-xl font-bold text-slate-800 leading-tight group-hover:text-indigo-900 transition-colors">
+                        {program.name}
+                    </h3>
+                </div>
+
+                <div className="flex items-center gap-3 self-end md:self-center">
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className={`text-sm font-medium px-4 py-2 rounded-lg border transition-all duration-200 flex items-center gap-2 
+                            ${isExpanded
+                                ? 'bg-slate-100 text-slate-700 border-slate-200 shadow-inner'
+                                : 'bg-white text-indigo-600 border-indigo-100 hover:bg-indigo-50 hover:border-indigo-200 shadow-sm'}`}
+                    >
+                        {isExpanded ? 'Recolher' : 'Detalhes'}
+                    </button>
+
+                    <div className="flex gap-1 border-l pl-3 ml-1 border-slate-200">
                         <button
                             onClick={onEdit}
-                            className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="text-slate-400 hover:text-indigo-600 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
                             title="Editar Programa"
                         >
                             <Edit size={18} />
@@ -65,97 +84,69 @@ export default function ProgramCard({ program, axis, validation, onEdit, onDelet
                         )}
                     </div>
                 </div>
-
-                {/* Validation Alerts (if any) */}
-                {validation && !validation.isValid && (
-                    <div className="mb-4 bg-amber-50 p-3 rounded-lg border border-amber-100 text-xs text-amber-800 flex items-start gap-2">
-                        <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                        <div>
-                            <p className="font-bold mb-1">Atenção Necessária:</p>
-                            <ul className="list-disc pl-4 space-y-0.5 opacity-90">
-                                {validation.errors.map((err, idx) => (
-                                    <li key={idx}>{err}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                )}
-
-                {/* Description Snippet */}
-                <p className="text-slate-600 text-sm line-clamp-2">{program.objective}</p>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center border-b border-slate-100 bg-white px-6 py-2 gap-2">
-                <button
-                    onClick={() => setActiveTab('overview')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'overview' ? 'bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200' : 'text-slate-600 hover:bg-slate-50'}`}
-                >
-                    <FileText size={16} /> Visão Geral
-                </button>
-                <button
-                    onClick={() => setActiveTab('structure')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'structure' ? 'bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200' : 'text-slate-600 hover:bg-slate-50'}`}
-                >
-                    <Layers size={16} /> Projetos
-                </button>
-                <button
-                    onClick={() => setActiveTab('indicators')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'indicators' ? 'bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200' : 'text-slate-600 hover:bg-slate-50'}`}
-                >
-                    <Activity size={16} /> Indicadores
-                </button>
-                <button
-                    onClick={() => setActiveTab('risks')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'risks' ? 'bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200' : 'text-slate-600 hover:bg-slate-50'}`}
-                >
-                    <AlertTriangle size={16} /> Riscos
-                </button>
-            </div>
+            {/* Expanded Content Area */}
+            {isExpanded && (
+                <div className="border-t border-slate-100 bg-slate-50/30 animate-in slide-in-from-top-2 fade-in duration-300">
+                    {/* Navigation Tabs */}
+                    <div className="flex items-center px-6 border-b border-slate-200/50 gap-6 overflow-x-auto bg-white/50">
+                        <button
+                            onClick={() => setActiveTab('structure')}
+                            className={`py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'structure' ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                        >
+                            <Layers size={16} /> Projetos e Ações
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('indicators')}
+                            className={`py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'indicators' ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                        >
+                            <Activity size={16} /> Indicadores
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('risks')}
+                            className={`py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'risks' ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                        >
+                            <AlertTriangle size={16} /> Riscos
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'overview' ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                        >
+                            <FileText size={16} /> Ficha Técnica
+                        </button>
+                    </div>
 
-            {/* Content Area */}
-            <div className="p-6 bg-slate-50/30">
-                {activeTab === 'overview' && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-left-2 duration-300">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <span className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Problema Público</span>
-                                <p className="text-slate-800 text-sm leading-relaxed">{program.publicProblem || <span className="text-slate-400 italic">Não definido</span>}</p>
+                    {/* Tab Content */}
+                    <div className="p-6">
+                        {activeTab === 'structure' && <ProjectsList programId={program.id} />}
+                        {activeTab === 'indicators' && <IndicatorsList programId={program.id} />}
+                        {activeTab === 'risks' && <RisksList programId={program.id} />}
+
+                        {activeTab === 'overview' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-left-2 duration-300">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                                        <span className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Problema Público</span>
+                                        <p className="text-slate-700 text-sm leading-relaxed">{program.publicProblem || <span className="text-slate-300 italic">Não definido</span>}</p>
+                                    </div>
+                                    <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                                        <span className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Público-Alvo</span>
+                                        <p className="text-slate-700 text-sm leading-relaxed">{program.targetAudience || <span className="text-slate-300 italic">Não definido</span>}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-indigo-50/50 p-5 rounded-xl border border-indigo-100 flex items-start gap-3">
+                                    <Target className="text-indigo-600 shrink-0 mt-1" size={20} />
+                                    <div>
+                                        <h4 className="font-bold text-indigo-900 text-sm mb-1">Objetivo Estratégico</h4>
+                                        <p className="text-indigo-800 text-sm leading-relaxed">{program.objective}</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <span className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Público-Alvo</span>
-                                <p className="text-slate-800 text-sm leading-relaxed">{program.targetAudience || <span className="text-slate-400 italic">Não definido</span>}</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
-                            <Target className="text-blue-600 shrink-0 mt-1" size={20} />
-                            <div>
-                                <h4 className="font-bold text-blue-900 text-sm mb-1">Objetivo Estratégico</h4>
-                                <p className="text-blue-800 text-sm leading-relaxed">{program.objective}</p>
-                            </div>
-                        </div>
+                        )}
                     </div>
-                )}
-
-                {activeTab === 'structure' && (
-                    <div className="animate-in fade-in slide-in-from-right-2 duration-300">
-                        <ProjectsList programId={program.id} />
-                    </div>
-                )}
-
-                {activeTab === 'indicators' && (
-                    <div className="animate-in fade-in zoom-in-95 duration-300">
-                        <IndicatorsList programId={program.id} />
-                    </div>
-                )}
-
-                {activeTab === 'risks' && (
-                    <div className="animate-in fade-in zoom-in-95 duration-300">
-                        <RisksList programId={program.id} />
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

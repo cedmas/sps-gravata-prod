@@ -240,6 +240,8 @@ export default function DashboardPage() {
 
 
 
+
+
             {/* Smart Summary Card - Restricted Access */}
             {canViewSmartSummary && (
                 <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">

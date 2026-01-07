@@ -29,6 +29,8 @@ export interface Program {
     publicProblem: string;
     targetAudience: string;
     axisId: string; // Eixo Estratégico
+    unit?: Unit;
+    axis?: Axis;
 }
 
 export type ActionStatus = 'not_started' | 'in_progress' | 'completed' | 'delayed';
