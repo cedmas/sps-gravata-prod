@@ -57,6 +57,8 @@ export interface Action {
     status: ActionStatus;
     weight: number; // Peso (1-10 ou percentual)
     description?: string;
+    isMeetingDemand?: boolean; // Se true, é uma deliberação de reunião
+    origin?: 'meeting' | 'planning';
 }
 
 export interface Deliverable {

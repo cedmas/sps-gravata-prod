@@ -17,6 +17,7 @@ import {
 import { Toaster } from 'sonner';
 import { cn } from '../../lib/utils';
 import LoginAlertModal from '../dashboard/LoginAlertModal';
+import PendingDemandsDialog from '../dashboard/PendingDemandsDialog';
 import { automationService } from '../../services/automationService';
 
 // Helper Component for Sidebar Items
@@ -174,6 +175,8 @@ export default function Layout() {
                 </div>
                 {/* Login Alert */}
                 <LoginAlertModal />
+                {/* Meeting Demands Popup */}
+                <PendingDemandsDialog />
             </main>
         </div>
     );
